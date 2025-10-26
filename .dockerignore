@@ -1,0 +1,10 @@
+# .dockerignore
+.git
+.gitignore
+node_modules
+devops-build/node_modules
+Dockerfile*
+docker-compose*.yml
+*.log
+.vscode
+.idea

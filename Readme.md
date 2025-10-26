@@ -1,4 +1,4 @@
-# Trend Project
+# Brain Task Project
 
 ## Running the Project
 
@@ -30,5 +30,15 @@ serve -s dist
 
 The project should now be running locally, and you can access it in your browser.
 
+## after creating Docker File
+
+# Build Docker image
+docker build -t trend-app:latest .
+
+# Run the container
+docker run -d -p 3000:80 trend-app:latest
+
+# go to the browser and test it.
+test the project on localhost
 
 
