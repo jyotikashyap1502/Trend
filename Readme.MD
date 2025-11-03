@@ -335,7 +335,7 @@ sudo chown -R jenkins:jenkins /var/lib/jenkins/.kube
 exit
 
 
-Step 6.6: Create Jenkins Pipeline Job
+# Step 6.6: Create Jenkins Pipeline Job
 
 Jenkins Dashboard → "New Item"
 Name: trend-app-pipeline
@@ -363,7 +363,7 @@ Script Path: Jenkinsfile
 
 Click "Save"
 
-Step 6.7: Set Up GitHub Webhook
+# Step 6.7: Set Up GitHub Webhook
 
 Go to your GitHub repository
 Settings → Webhooks → Add webhook
@@ -373,8 +373,302 @@ Disable SSL verification
 Events: "Just the push event"
 Click "Add webhook"
 
-Step 6.8: Test the Pipeline
+# Step 6.8: Test the Pipeline
+
 cd /path/to/Trend
 git add Jenkinsfile
 git commit -m "Add Jenkins pipeline"
 git push origin main
+
+
+
+
+
+# Common Issues & Fixes in Jenkins EKS Deployment
+```
+During the integration of Jenkins with EKS for automated deployment, several issues occurred which were resolved step-by-step as follows:
+
+1️⃣ AccessDeniedException – EKS Permissions
+Error:
+An error occurred (AccessDeniedException) when calling the DescribeCluster operation:
+User: arn:aws:iam::<ACCOUNT_ID>:user/jenkins-deploy-trend is not authorized to perform: eks:DescribeCluster
+
+Cause:
+The IAM user (jenkins-deploy-trend) didn’t have required permissions to access the EKS cluster.
+Solution:
+Attach the following AWS managed policies to the Jenkins IAM user:
+aws iam attach-user-policy --user-name jenkins-deploy-trend \
+  --policy-arn arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
+
+aws iam attach-user-policy --user-name jenkins-deploy-trend \
+  --policy-arn arn:aws:iam::aws:policy/AmazonEKSServicePolicy
+
+aws iam attach-user-policy --user-name jenkins-deploy-trend \
+  --policy-arn arn:aws:iam::aws:policy/AmazonEC2FullAccess
+
+aws iam attach-user-policy --user-name jenkins-deploy-trend \
+  --policy-arn arn:aws:iam::aws:policy/AmazonVPCFullAccess
+
+Then verify:
+aws iam list-attached-user-policies --user-name jenkins-deploy-trend
+
+✅ This ensures the Jenkins IAM user can describe, update, and connect to the EKS cluster.
+
+2️⃣ Jenkins Access to EKS Failed – Credentials Error
+Error:
+error: You must be logged in to the server (the server has asked for the client to provide credentials)
+
+Cause:
+The Jenkins IAM user was not authorized inside the cluster’s aws-auth ConfigMap.
+Solution:
+Grant access to the Jenkins IAM user in your EKS cluster.
+From your local machine (where kubectl is configured and working):
+kubectl patch configmap aws-auth -n kube-system --type merge -p '{
+  "data": {
+    "mapUsers": "- userarn: arn:aws:iam::<ACCOUNT_ID>:user/jenkins-deploy-trend\n  username: jenkins\n  groups:\n    - system:masters\n"
+  }
+}'
+
+Then verify:
+kubectl get configmap aws-auth -n kube-system -o yaml
+
+You should now see your IAM user listed under both mapUsers (and optionally mapRoles).
+
+3️⃣ kubeconfig Permission Issue on Jenkins Server
+Error:
+Can't open kubeconfig for reading: [Errno 13] Permission denied: '/var/lib/jenkins/.kube/config'
+
+Cause:
+The Jenkins user didn’t have ownership of the kubeconfig directory.
+Solution:
+Run the following commands:
+sudo mkdir -p /var/lib/jenkins/.kube
+sudo aws eks update-kubeconfig \
+  --region ap-south-1 \
+  --name trend-cluster \
+  --kubeconfig /var/lib/jenkins/.kube/config
+
+sudo chown -R jenkins:jenkins /var/lib/jenkins/.kube
+
+Switch to Jenkins user and test:
+sudo su - jenkins
+kubectl get nodes
+
+✅ You should now see all EKS nodes in Ready state.
+
+4️⃣ Pipeline Failure – “invalid apiVersion client.authentication.k8s.io/v1alpha1”
+Error (Jenkins logs):
+error: exec plugin: invalid apiVersion "client.authentication.k8s.io/v1alpha1"
+
+Cause:
+The kubeconfig file was using an outdated authentication API version.
+Solution:
+After updating the kubeconfig (as shown above), the aws CLI automatically uses the latest v1beta1 API — fixing this issue.
+
+5️⃣ Final Verification
+Switch to Jenkins user and test EKS access:
+sudo su - jenkins
+kubectl get nodes
+
+✅ Output:
+NAME                                            STATUS   ROLES    AGE   VERSION
+ip-192-168-35-138.ap-south-1.compute.internal   Ready    <none>   37h   v1.32.9-eks-113cf36
+ip-192-168-85-124.ap-south-1.compute.internal   Ready    <none>   37h   v1.32.9-eks-113cf36
+
+Trigger a new build in Jenkins:
+
+
+Push code changes to GitHub
+
+
+Jenkins webhook triggers automatically
+
+
+Build proceeds → Docker image builds → pushed to DockerHub → deployed to EKS successfully 🎯
+
+
+
+✅ Final Result
+
+
+Jenkins user successfully authenticated with EKS cluster
+
+
+Full CI/CD pipeline works end-to-end:
+
+
+Code pushed to GitHub
+
+
+Jenkins builds Docker image
+
+
+Pushes image to DockerHub
+
+
+Updates deployment on EKS
+
+
+Verifies pods and services automatically
+```
+----------------------------------------
+
+
+# 🧩 Phase 7: Monitoring (Prometheus + Grafana)
+
+This phase sets up real-time monitoring for the Kubernetes cluster using Prometheus and Grafana with Helm.
+
+🚀 Step 1: Verify Helm Installation
+
+Check if Helm is installed and working:
+
+helm version
+
+
+If you see output similar to:
+
+version.BuildInfo{Version:"v3.19.0", GitCommit:"3d8990f0836691f0229297773f3524598f46bda6", ...}
+
+
+Helm is installed successfully.
+
+🏗️ Step 2: Add the Prometheus Helm Repository
+
+Add and update the Prometheus Community Helm repository:
+
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm repo update
+
+
+Expected output:
+
+"prometheus-community" has been added to your repositories
+Update Complete. ⎈Happy Helming!⎈
+
+🧱 Step 3: Create a Namespace for Monitoring
+
+To keep resources organized, create a dedicated namespace:
+
+kubectl create namespace monitoring
+
+
+Expected:
+
+namespace/monitoring created
+
+⚙️ Step 4: Install Prometheus Stack (Includes Grafana)
+
+Install the kube-prometheus-stack Helm chart in the monitoring namespace:
+
+helm install prometheus prometheus-community/kube-prometheus-stack -n monitoring
+
+
+Expected output (partial):
+
+NAME: prometheus
+NAMESPACE: monitoring
+STATUS: deployed
+...
+
+
+You can verify the deployment using:
+
+kubectl get pods -n monitoring
+
+🔐 Step 5: Get Grafana Admin Password
+
+Once deployed, retrieve the Grafana admin credentials:
+
+kubectl get secret -n monitoring prometheus-grafana -o jsonpath="{.data.admin-password}" | base64 --decode ; echo
+
+
+Use admin as the username and the decoded password to log in.
+
+🌍 Step 6: Expose Grafana via LoadBalancer
+
+By default, Grafana runs internally. To access it from outside the cluster:
+
+kubectl -n monitoring patch svc prometheus-grafana -p '{"spec": {"type": "LoadBalancer"}}'
+
+
+Check the assigned external LoadBalancer URL:
+
+kubectl get svc -n monitoring prometheus-grafana -w
+
+
+Example output:
+
+NAME                 TYPE           CLUSTER-IP       EXTERNAL-IP                                                                PORT(S)        AGE
+prometheus-grafana   LoadBalancer   10.100.218.109   a122015234e8b4f508a3c95a34c5e4ef-1790996531.ap-south-1.elb.amazonaws.com   80:30828/TCP   57s
+
+🧭 Step 7: Access Grafana Dashboard
+
+Now you can open Grafana in your browser:
+
+🌐 http://a122015234e8b4f508a3c95a34c5e4ef-1790996531.ap-south-1.elb.amazonaws.com
+
+Login with:
+
+Username: admin
+
+Password: (from the previous step)
+
+You’ll be prompted to set a new password on first login.
+
+To confirm Grafana is active, you can also test via curl:
+
+curl -I http://<grafana-external-ip>
+
+
+Expected:
+
+HTTP/1.1 302 Found
+Location: /login
+
+📊 Step 8: Import Kubernetes Monitoring Dashboard
+
+After logging in to Grafana:
+
+Go to Dashboards → Import
+
+Enter dashboard ID: 315
+
+Click Load
+
+Select Prometheus as the data source
+
+Click Import
+
+✅ Grafana will now display real-time metrics for:
+
+Node CPU & Memory usage
+
+Pod resource utilization
+
+Cluster & namespace health
+
+Pod restarts and uptime
+
+🧠 Notes
+
+This setup uses the kube-prometheus-stack chart which includes:
+
+Prometheus
+
+Alertmanager
+
+Node Exporter
+
+Grafana
+
+Related CRDs and dashboards
+
+You can later add HTTPS and domain support using AWS ACM or Cloudflare.
+
+✅ Final Verification
+kubectl get all -n monitoring
+
+
+You should see running pods for Prometheus, Grafana, and Alertmanager — confirming your monitoring stack is active and healthy.
+
+--------
