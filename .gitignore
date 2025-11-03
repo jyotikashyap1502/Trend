@@ -11,12 +11,10 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-# Environment variables
+# Environment files
 .env
 .env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.production
 
 # OS files
 .DS_Store
@@ -34,3 +32,23 @@ Thumbs.db
 # Docker
 docker-compose.override.yml
 *.log
+
+
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+.terraform-outputs.txt
+# AWS
+*.pem
+*.key
+
+# Secrets
+secrets/
+credentials/

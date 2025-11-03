@@ -1,11 +1,18 @@
-# Use official NGINX image
+# Production stage
 FROM nginx:alpine
+
+# Copy custom nginx config if needed
+# COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Copy build files to NGINX html folder
 COPY dist /usr/share/nginx/html
 
-# Expose port 80
-EXPOSE 80
+# Expose port 3000
+EXPOSE 3000
 
-# Start NGINX server
+# Update nginx to listen on port 3000
+RUN sed -i 's/listen       80;/listen       3000;/g' /etc/nginx/conf.d/default.conf
+
+# Start nginx
 CMD ["nginx", "-g", "daemon off;"]
+
