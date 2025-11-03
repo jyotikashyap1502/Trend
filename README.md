@@ -333,3 +333,48 @@ sudo aws eks update-kubeconfig --name trend-cluster --region ap-south-1 --kubeco
 sudo chown -R jenkins:jenkins /var/lib/jenkins/.kube
 
 exit
+
+
+Step 6.6: Create Jenkins Pipeline Job
+
+Jenkins Dashboard → "New Item"
+Name: trend-app-pipeline
+Type: "Pipeline"
+Click "OK"
+
+Configure:
+
+Build Triggers:
+
+Check "GitHub hook trigger for GITScm polling"
+
+
+Pipeline:
+
+Definition: "Pipeline script from SCM"
+SCM: Git
+Repository URL: https://github.com/Vennilavan12/Trend.git
+Credentials: Select your GitHub token
+Branch: */main
+Script Path: Jenkinsfile
+
+
+
+
+Click "Save"
+
+Step 6.7: Set Up GitHub Webhook
+
+Go to your GitHub repository
+Settings → Webhooks → Add webhook
+Payload URL: http://JENKINS_PUBLIC_IP:8080/github-webhook/
+Content type: application/json
+Disable SSL verification 
+Events: "Just the push event"
+Click "Add webhook"
+
+Step 6.8: Test the Pipeline
+cd /path/to/Trend
+git add Jenkinsfile
+git commit -m "Add Jenkins pipeline"
+git push origin main
