@@ -1,4 +1,4 @@
-# Brain Task Project
+# Trend  Project
 
 ## Prerequisites
 
@@ -353,7 +353,7 @@ Pipeline:
 
 Definition: "Pipeline script from SCM"
 SCM: Git
-Repository URL: https://github.com/Vennilavan12/Trend.git
+Repository URL: https://github.com/{userName}/Trend.git
 Credentials: Select your GitHub token
 Branch: */main
 Script Path: Jenkinsfile
@@ -671,4 +671,140 @@ kubectl get all -n monitoring
 
 You should see running pods for Prometheus, Grafana, and Alertmanager — confirming your monitoring stack is active and healthy.
 
+
+
+-----------*******************----------------------------
+# how to test the project -
+
+Switch to the Correct EKS Cluster (Trend Project)
+
+If you have multiple EKS clusters (for example, one for another project like brain-tasks), make sure you are connected to the Trend cluster before running any kubectl commands.
+
+# List all available EKS clusters in your AWS account
+aws eks list-clusters --region ap-south-1
+
+# Update kubeconfig to point to the Trend cluster
+aws eks update-kubeconfig --name trend-cluster --region ap-south-1
+
+# Verify the active cluster context
+kubectl config current-context
+
+# Optional: check cluster info to confirm connection
+kubectl cluster-info
+
+
+✅ Expected Output Example:
+
+arn:aws:eks:ap-south-1:123456789012:cluster/trend-cluster
+Kubernetes control plane is running at https://XXXX.gr7.ap-south-1.eks.amazonaws.com
+
+
+Now you are connected to the correct Trend cluster and can safely proceed with:
+
+kubectl get all
+kubectl get pods
+kubectl get svc
+
+
+
+
 --------
+✅ React frontend → Docker → Terraform → Jenkins → EKS → Monitoring (Prometheus + Grafana).
+
+
+# 📸 Project Deployment Proof — Trend App
+
+This document provides visual proof of each phase of the **Trend App** end-to-end DevOps pipeline — from code to deployment, monitoring, and automation.  
+All screenshots are stored in the `/screenshots/` folder.
+
+---
+
+## 🧱 1. Application Running on AWS (LoadBalancer URL)
+![Application UI](./screenshots/01_app_ui.png)
+*The Trend App running successfully via AWS LoadBalancer URL — proof of live deployment on EKS.*
+
+---
+
+## 🐳 2. Docker Image Build and Verification
+![Docker Image](./screenshots/Docker%20Image.png)
+*Docker image built successfully inside the Jenkins EC2 (`10.0.1.184`). Multiple tags (`1`, `2`, `3`, `4`, `latest`) confirm CI/CD re-builds.*
+
+---
+
+## ☁️ 3. DockerHub Repository
+![DockerHub Repository](./screenshots/dockerhub-repository.png)
+*Docker image pushed to DockerHub repository — `jyotikashyap1502/trend-app:latest`.*
+
+---
+
+## 💻 4. GitHub Repository and Webhook
+![GitHub Repository](./screenshots/github-repository.png)
+*Source code repository for the Trend App.*
+
+![GitHub Webhook](./screenshots/github-webhook.png)
+*Webhook integration between GitHub and Jenkins ensures automated build triggers on every push.*
+
+---
+
+## ⚙️ 5. Jenkins CI/CD Pipeline
+![Jenkins Dashboard](./screenshots/jenkins-dashboard.png)
+*Jenkins server dashboard showing the configured pipeline for Trend App.*
+
+![Jenkins Console Output](./screenshots/jenkins-console-output.png)
+*Build logs showing Docker build, image push, and deployment steps executed successfully.*
+
+![Jenkins Pipeline Success](./screenshots/jenkins-pipeline-success.png)
+*Pipeline completed successfully — confirming automated CI/CD workflow.*
+
+---
+
+## ☸️ 6. Kubernetes Deployment on EKS
+![Cluster Nodes](./screenshots/Cluster%20Nodes.png)
+*Kubernetes nodes in Ready state — EKS cluster running properly.*
+
+![Kubernetes Resources](./screenshots/Kubernetes%20Resources.png)
+*Deployed resources (Deployments, Pods, ReplicaSets) confirming Trend App rollout.*
+
+![Kubernetes Service](./screenshots/kubernetes-service.png)
+*Service exposing the app via AWS LoadBalancer.*
+
+---
+
+## 📊 7. Monitoring with Prometheus and Grafana
+![Grafana Login](./screenshots/Grafana-%20login%20page.png)
+*Grafana login page — monitoring stack deployed inside EKS.*
+
+![Grafana Dashboard](./screenshots/grafana-dashboard.png)
+*Grafana dashboard visualizing node and pod-level metrics — confirming end-to-end monitoring.*
+
+---
+
+## ✅ Summary
+
+| Stage | Tool | Proof |
+|--------|------|-------|
+| App Deployment | AWS EKS (Kubernetes) | `01_app_ui.png`, `kubernetes-service.png` |
+| Containerization | Docker, DockerHub | `Docker Image.png`, `dockerhub-repository.png` |
+| CI/CD | Jenkins, GitHub | `jenkins-dashboard.png`, `jenkins-console-output.png`, `jenkins-pipeline-success.png`, `github-repository.png`, `github-webhook.png` |
+| Monitoring | Grafana, Prometheus | `Grafana- login page.png`, `grafana-dashboard.png` |
+
+---
+
+**Project Status:** ✅ Completed  
+**Tools Used:** React, Docker, Jenkins, Terraform, AWS EKS, Prometheus, Grafana  
+**Documentation Prepared By:** *Jyoti Kashyap
+
+/screenshots/
+├── 01_app_ui.png
+├── Docker Image.png
+├── Cluster Nodes.png
+├── dockerhub-repository.png
+├── github-repository.png
+├── github-webhook.png
+├── Grafana- login page.png
+├── grafana-dashboard.png
+├── jenkins-console-output.png
+├── jenkins-dashboard.png
+├── jenkins-pipeline-success.png
+├── Kubernetes Resources.png
+├── kubernetes-service.png
